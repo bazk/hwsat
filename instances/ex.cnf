@@ -1,0 +1,10 @@
+c FILE: ex.cnf 
+c
+c NOTE: Satisfiable
+c
+p cnf 5 5
+-3 1 0
+-4 1 0
+-2 3 1 0
+5 -1 0
+3 -1 0
