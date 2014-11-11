@@ -153,9 +153,12 @@ def run(args):
 
     total_time = 0
 
-    for line in p.stdout.readlines():
-        line = line.strip('\n')
-        fields = line.split(':')
+    while True:
+        line = p.stdout.readline()
+        if (line == '') and (p.poll() is not None):
+            break
+
+        fields = line.strip('\n').split(':')
         timestamp = int(fields[3].lstrip('@')[:-2]) / 1000000000000.0
         tmp = fields[5].lstrip(' ').split(' ')
         cmd = tmp[0]
