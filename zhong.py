@@ -1,6 +1,7 @@
 #!/usr/bin/env python2
 
 import os, sys
+import argparse
 import jinja2
 import time
 import subprocess
@@ -10,22 +11,7 @@ ROOT_DIR = os.path.dirname(os.path.realpath(__file__))
 TEMPLATES_DIR = os.path.join(ROOT_DIR, "templates")
 WORK_DIR = os.path.join(ROOT_DIR, "work")
 
-def apply_tpl(template, output, env={}):
-    contents = template.render(env)
-    checksum = hashlib.sha1(contents).hexdigest()
-
-    match = False
-    try:
-        with open(os.path.join(WORK_DIR, output), 'rb') as f:
-            match = ( checksum == hashlib.sha1(f.read()).hexdigest() )
-    except:
-        pass
-
-    if not match:
-        with open(os.path.join(WORK_DIR, output), 'w') as f:
-            f.write(contents)
-
-def parse_templates(variables):
+def parse_templates(args, variables):
     if not os.path.exists(WORK_DIR):
         os.makedirs(WORK_DIR)
 
@@ -36,6 +22,21 @@ def parse_templates(variables):
 
     engine.globals["variables"] = variables
     engine.globals["len_variables"] = len(variables)
+
+    def apply_tpl(template, output, env={}):
+        contents = template.render(env)
+        checksum = hashlib.sha1(contents).hexdigest()
+
+        match = False
+        try:
+            with open(os.path.join(WORK_DIR, output), 'rb') as f:
+                match = ( checksum == hashlib.sha1(f.read()).hexdigest() )
+        except:
+            pass
+
+        if not match:
+            with open(os.path.join(WORK_DIR, output), 'w') as f:
+                f.write(contents)
 
     apply_tpl(engine.get_template('solver.vhd'), 'solver.vhd')
     apply_tpl(engine.get_template('solver_tb.vhd'), 'solver_tb.vhd')
@@ -58,7 +59,7 @@ def parse_templates(variables):
         "savefile": os.path.join(WORK_DIR, 'solver.gtkw')
     })
 
-def parse_dimacs(input_file):
+def parse_dimacs(args, input_file):
     tmp_variables = {}
     num_clauses = 0
 
@@ -127,16 +128,21 @@ def parse_dimacs(input_file):
 
     return (sorted(variables, key=lambda var: int(var["name"][3:])), num_clauses)
 
-def compile():
+def compile(args):
     with open(os.devnull, "w") as devnull:
         subprocess.check_call(["make"], cwd=WORK_DIR, stdout=devnull)
 
-def run():
+def run(args):
     print 'c ============================[ Search Statistics ]=============================='
-    print 'c |        Conflicts        |        Decisions        |       Backtracks        |'
+    print 'c |                 |     Conflicts     |     Decisions     |    Backtracks     |'
     print 'c ==============================================================================='
 
-    p = subprocess.Popen(['./solver_tb', "--vcd=solver.vcd"], cwd=WORK_DIR, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    cmdline = ['./solver_tb']
+
+    if (not args.no_vcd):
+        cmdline.append('--vcd=solver.vcd')
+
+    p = subprocess.Popen(cmdline, cwd=WORK_DIR, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
     sat = False
     values = []
@@ -145,10 +151,13 @@ def run():
     num_conflicts = 0
     num_backtracks = 0
 
+    total_time = 0
+
     for line in p.stdout.readlines():
         line = line.strip('\n')
-        sline = line.split(': ')[1]
-        tmp = sline.split(' ')
+        fields = line.split(':')
+        timestamp = int(fields[3].lstrip('@')[:-2]) / 1000000000000.0
+        tmp = fields[5].lstrip(' ').split(' ')
         cmd = tmp[0]
         args = tmp[1:]
 
@@ -156,10 +165,11 @@ def run():
             num_decisions = int(args[0])
             num_conflicts = int(args[1])
             num_backtracks = int(args[2])
-            print 'c |        % 16d |        % 16d |        % 16d |' % (num_decisions, num_conflicts, num_backtracks)
+            print 'c |  %.10f s |  % 16d |  % 16d |  % 16d |' % (timestamp, num_decisions, num_conflicts, num_backtracks)
 
         elif (cmd == "RESULT"):
             sat = (args[0] == "SAT")
+            total_time = timestamp
 
         elif (cmd == "VALUE"):
             sign = -1 if (args[0][0] == "-") else 1
@@ -168,17 +178,22 @@ def run():
 
     values = sorted(values, key=lambda v: abs(v))
 
-    return (sat, values), (num_decisions, num_conflicts, num_backtracks)
+    return (sat, values), (num_decisions, num_conflicts, num_backtracks, total_time)
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--no-vcd', action='store_true', help='dont write the simulation vcd file')
+    parser.add_argument('input', nargs='?', help='input dimacs')
+    args = parser.parse_args()
+
     start_time = time.time()
 
-    if (len(sys.argv) < 2):
+    if (args.input is None):
         print 'c Reading from standard input...'
-        (variables, num_clauses) = parse_dimacs(sys.stdin)
+        (variables, num_clauses) = parse_dimacs(args, sys.stdin)
     else:
-        with open(sys.argv[1]) as f:
-            (variables, num_clauses) = parse_dimacs(f)
+        with open(args.input) as f:
+            (variables, num_clauses) = parse_dimacs(args, f)
 
     parse_time = time.time() - start_time
 
@@ -189,13 +204,13 @@ def main():
     print 'c |  Parse time:               % 8.2f s                                       |' % (parse_time)
 
     start_time = time.time()
-    parse_templates(variables)
+    parse_templates(args, variables)
     templ_parse_time = time.time() - start_time
 
     print 'c |  Template parse time:      % 8.2f s                                       |' % (templ_parse_time)
 
     start_time = time.time()
-    compile()
+    compile(args)
     compile_time = time.time() - start_time
 
     print 'c |  Compile time:             % 8.2f s                                       |' % (compile_time)
@@ -203,17 +218,18 @@ def main():
     print 'c |                                                                             |'
 
     start_time = time.time()
-    (result, stats) = run()
+    (result, stats) = run(args)
     run_time = time.time() - start_time
 
     (sat, values) = result
-    (num_decisions, num_conflicts, num_backtracks) = stats
+    (num_decisions, num_conflicts, num_backtracks, total_time) = stats
 
     print 'c ==============================================================================='
     print 'c conflicts             : %d' % (num_conflicts)
     print 'c decisions             : %d' % (num_decisions)
     print 'c backtracks            : %d' % (num_backtracks)
-    print 'c time                  : %.6f s' % (run_time)
+    print 'c sim time              : %.6f s' % (run_time)
+    print 'c hw time               : %.6f s' % (total_time)
     print 'c '
     print 's', 'SATISFIABLE' if sat else 'UNSATISFIABLE'
     if values:
