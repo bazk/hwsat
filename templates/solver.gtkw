@@ -1,0 +1,46 @@
+[*]
+[*] GTKWave Analyzer v3.3.62 (w)1999-2014 BSI
+[*] Fri Nov  7 07:43:45 2014
+[*]
+[dumpfile] "{{ dumpfile }}"
+[savefile] "{{ savefile }}"
+[timestart] 0
+*-25.540728 169800000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+@28
+solver_0.clk
+solver_0.reset
+@200
+-
+@28
+solver_0.sat
+solver_0.unsat
+@200
+-
+@28
+solver_0.gchange
+solver_0.gcontra
+solver_0.gclear
+@200
+-
+{% for var in variables %}
+@28
+[color] {{ var.color | default('0') }}
+solver_0.{{ var.name }}[0:1]
+@200
+{% endfor %}
+{% for var in variables %}
+-
+-{{ var.name }}
+@28
+[color] {{ var.color | default('0') }}
+solver_0.{{ var.name }}[0:1]
+[color] {{ var.color | default('0') }}
+solver_0.control_{{ var.name }}_0.imp_{{ var.name }}_0.value[0:1]
+[color] {{ var.color | default('0') }}
+solver_0.control_{{ var.name }}_0.imp_{{ var.name }}_0.imp[0:1]
+[color] {{ var.color | default('0') }}
+solver_0.control_{{ var.name }}_0.imp_{{ var.name }}_0.contra
+@200
+{% endfor %}
+[pattern_trace] 1
+[pattern_trace] 0
