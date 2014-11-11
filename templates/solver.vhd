@@ -103,7 +103,7 @@ begin
             gdebug_num_backtracks <= 0;
             gdebug_counter <= 0;
         else
-            if (gdebug_counter >= 1024) or (is_sat='1') or (is_unsat='1') then
+            if (gdebug_counter >= 8192) or (is_sat='1') or (is_unsat='1') then
                 gdebug_num_decisions <= {% for var in variables %} ldebug_num_decisions_{{ var.name }} {% if not loop.last %}+{% endif %}{% endfor %};
                 gdebug_num_conflicts <= {% for var in variables %} ldebug_num_conflicts_{{ var.name }} {% if not loop.last %}+{% endif %}{% endfor %};
                 gdebug_num_backtracks <= {% for var in variables %} ldebug_num_backtracks_{{ var.name }} {% if not loop.last %}+{% endif %}{% endfor %};
