@@ -102,26 +102,29 @@ begin
             gdebug_num_conflicts <= 0;
             gdebug_num_backtracks <= 0;
             gdebug_counter <= 0;
-        elsif (gdebug_counter >= 1024) then
-            gdebug_num_decisions <= {% for var in variables %} ldebug_num_decisions_{{ var.name }} {% if not loop.last %}+{% endif %}{% endfor %};
-            gdebug_num_conflicts <= {% for var in variables %} ldebug_num_conflicts_{{ var.name }} {% if not loop.last %}+{% endif %}{% endfor %};
-            gdebug_num_backtracks <= {% for var in variables %} ldebug_num_backtracks_{{ var.name }} {% if not loop.last %}+{% endif %}{% endfor %};
-            report "num_decisions = " & integer'image(gdebug_num_decisions);
-            report "num_conflicts = " & integer'image(gdebug_num_conflicts);
-            report "num_backtracks = " & integer'image(gdebug_num_backtracks);
-            report " ";
-            gdebug_counter <= 0;
-        elsif (is_sat='1') then
-            {% for var in variables %}
-            if ({{ var.name }}="10") then
-                report "{{ var.name }}";
-            elsif ({{ var.name }}="01") then
-                report "-{{ var.name }}";
-            end if;
-            {% endfor %}
-            report " ";
         else
-            gdebug_counter <= gdebug_counter + 1;
+            if (gdebug_counter >= 1024) or (is_sat='1') or (is_unsat='1') then
+                gdebug_num_decisions <= {% for var in variables %} ldebug_num_decisions_{{ var.name }} {% if not loop.last %}+{% endif %}{% endfor %};
+                gdebug_num_conflicts <= {% for var in variables %} ldebug_num_conflicts_{{ var.name }} {% if not loop.last %}+{% endif %}{% endfor %};
+                gdebug_num_backtracks <= {% for var in variables %} ldebug_num_backtracks_{{ var.name }} {% if not loop.last %}+{% endif %}{% endfor %};
+                report "STATS " & integer'image(gdebug_num_decisions) & " " & integer'image(gdebug_num_conflicts) & " " & integer'image(gdebug_num_backtracks);
+                gdebug_counter <= 0;
+            else
+                gdebug_counter <= gdebug_counter + 1;
+            end if;
+
+            if (is_sat='1') then
+                report "RESULT SAT";
+                {% for var in variables %}
+                if ({{ var.name }}="10") then
+                    report "VALUE {{ var.name }}";
+                elsif ({{ var.name }}="01") then
+                    report "VALUE -{{ var.name }}";
+                end if;
+                {% endfor %}
+            elsif (is_unsat='1') then
+                report "RESULT UNSAT";
+            end if;
         end if;
     end process;
 end behavioral;

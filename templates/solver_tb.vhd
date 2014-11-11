@@ -29,13 +29,4 @@ begin
     -- 166Mhz clock ~= 5.74 ns full-period, 2.87 ns half-period
     clk <= '0' when (sat='1' or unsat='1') else not clk after 2.87 ns;
     reset <= '0', '1' after 2 ns, '0' after 7 ns;
-
-    process (sat, unsat)
-    begin
-        if (sat='1') then
-            report "SAT";
-        elsif (unsat='1') then
-            report "UNSAT";
-        end if;
-    end process;
 end behavioral;
