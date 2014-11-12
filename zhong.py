@@ -9,11 +9,11 @@ import hashlib
 
 ROOT_DIR = os.path.dirname(os.path.realpath(__file__))
 TEMPLATES_DIR = os.path.join(ROOT_DIR, "templates")
-WORK_DIR = os.path.join(ROOT_DIR, "work")
+DEFAULT_WORK_DIR = os.path.join(ROOT_DIR, "work")
 
 def parse_templates(args, variables):
-    if not os.path.exists(WORK_DIR):
-        os.makedirs(WORK_DIR)
+    if not os.path.exists(args.work_dir):
+        os.makedirs(args.work_dir)
 
     engine = jinja2.Environment(
         loader=jinja2.FileSystemLoader(TEMPLATES_DIR),
@@ -29,13 +29,13 @@ def parse_templates(args, variables):
 
         match = False
         try:
-            with open(os.path.join(WORK_DIR, output), 'rb') as f:
+            with open(os.path.join(args.work_dir, output), 'rb') as f:
                 match = ( checksum == hashlib.sha1(f.read()).hexdigest() )
         except:
             pass
 
         if not match:
-            with open(os.path.join(WORK_DIR, output), 'w') as f:
+            with open(os.path.join(args.work_dir, output), 'w') as f:
                 f.write(contents)
 
     apply_tpl(engine.get_template('solver.vhd'), 'solver.vhd')
@@ -55,8 +55,8 @@ def parse_templates(args, variables):
         color += 1
 
     apply_tpl(engine.get_template('solver.gtkw'), 'solver.gtkw', {
-        "dumpfile": os.path.join(WORK_DIR, 'solver.vcd'),
-        "savefile": os.path.join(WORK_DIR, 'solver.gtkw')
+        "dumpfile": os.path.join(args.work_dir, 'solver.vcd'),
+        "savefile": os.path.join(args.work_dir, 'solver.gtkw')
     })
 
 def parse_dimacs(args, input_file):
@@ -103,10 +103,11 @@ def parse_dimacs(args, input_file):
 
                     tmp.append("%s(%d)" % (var2, val2))
 
-                if (val == 0):
-                    tmp_variables[var]["neg_implications"].append("(%s)" % " and ".join(tmp))
-                else:
-                    tmp_variables[var]["pos_implications"].append("(%s)" % " and ".join(tmp))
+                if (len(tmp) > 0):
+                    if (val == 0):
+                        tmp_variables[var]["neg_implications"].append("(%s)" % " and ".join(tmp))
+                    else:
+                        tmp_variables[var]["pos_implications"].append("(%s)" % " and ".join(tmp))
 
     variables = []
     for (k,v) in tmp_variables.iteritems():
@@ -130,7 +131,7 @@ def parse_dimacs(args, input_file):
 
 def compile(args):
     with open(os.devnull, "w") as devnull:
-        subprocess.check_call(["make"], cwd=WORK_DIR, stdout=devnull)
+        subprocess.check_call(["make"], cwd=args.work_dir, stdout=devnull)
 
 def run(args):
     print 'c ============================[ Search Statistics ]=============================='
@@ -142,7 +143,7 @@ def run(args):
     if (not args.no_vcd):
         cmdline.append('--vcd=solver.vcd')
 
-    p = subprocess.Popen(cmdline, cwd=WORK_DIR, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    p = subprocess.Popen(cmdline, cwd=args.work_dir, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
     sat = False
     values = []
@@ -186,8 +187,14 @@ def run(args):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--no-vcd', action='store_true', help='dont write the simulation vcd file')
+    parser.add_argument('--work-dir', help='path to the work dir')
     parser.add_argument('input', nargs='?', help='input dimacs')
     args = parser.parse_args()
+
+    if (args.work_dir):
+        args.work_dir = os.path.abspath(args.work_dir)
+    else:
+        args.work_dir = DEFAULT_WORK_DIR
 
     start_time = time.time()
 
