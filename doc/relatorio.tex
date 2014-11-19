@@ -84,6 +84,39 @@ Mais a frente, Dandalis et al. \cite{dandalis2002runtimeperformance} propõe uma
 
 Neste trabalho, foi implementado a solução do Zhong et al \cite{zhong1998usingreconfigurable}. Um programa em Python recebe a fórmula CNF (no formato DIMACS) e, a partir de \textit{templates}, gera o código em VHDL correspondente. Para testes, o simulador GHDL compila o código e gera um programa que ao ser executado simula a execução do circuito. Os experimentos foram executados em um computador com um processador ``AMD FX(tm)-8120 Eight-Core Processor'' de 3,1 GHz, 8 GiB de memória e todo o código está disponível no repositório \url{https://github.com/bazk/hwsat}.
 
+As figuras \ref{fig:ram-nocomp} e \ref{fig:hole-nocomp} demonstrar o tempo de execução para um total de 7 instâncias dentre utilizadas para teste.
+As instâncias \textit{ram6} e \textit{ram8} são satisfasíveis, enquanto as instâncias \textit{ram10}, \textit{ram12}, \textit{hole6}, \textit{hole7} e \textit{hole8} são insatisfasíveis. Nos gráficos, a implementação deste trabalho é representada por \textbf{zhong}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{figures/ram-nocomp}
+    \caption{ram nocomp}
+    \label{fig:ram-nocomp}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{figures/hole-nocomp}
+    \caption{hole nocomp}
+    \label{fig:hole-nocomp}
+\end{figure}
+
+Percebe-se que o tempo de execução em hardware é menor do que os algoritmos de referência implementados em software. Porém, não foi contado o tempo de compilação. Nas figuras \ref{fig:ram-comp} e \ref{fig:hole-comp} é mostrado o tempo de execução somado do tempo de compilação para as mesmas instâncias de antes. Agora, a implementação em hardware é muito mais ineficiente e chega a ser pior do que o algoritmo GRASP.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{figures/ram-comp}
+    \caption{ram comp}
+    \label{fig:ram-comp}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{figures/hole-comp}
+    \caption{hole comp}
+    \label{fig:hole-comp}
+\end{figure}
+
 \section{Conclusão}
 
 O tempo de compilação dos resolvedores \textit{instance-specific} em hardware tornam esse tipo de solução inviável (porque hoje existem resolvedores eficientes em software). Para um número grande de variáveis, o tempo de compilação pode chegar a horas. Ainda assim, historicamente é interessante observar a evolução de tais soluções em uma época em que os resolvedores em software ainda não eram tão eficientes.
