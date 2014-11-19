@@ -46,7 +46,7 @@ Este relatório apresenta na Seção \ref{sec:rev} uma breve revisão da bibliog
 \section{Revisão Bibliográfica}
 \label{sec:rev}
 
-A idéia de implementar um resolvedor SAT em hardware vem desde 1996 com o artigo do Suyama et al. \cite{suyama1996solvingsatisfiability}. Neste, dada uma instância SAT, é gerado um código VHDL correspondente que é compilado e aplicado à uma FPGA que executa o circuito e resolve a instância. Essa abordagem é denominada \textit{instance-specific}, pois o código HDL gerado é específico aquela instância. A Figura ? representa uma visão geral de como ocorre o processo de um resolvedor \textit{instance-specific} em hardware.
+A idéia de implementar um resolvedor SAT em hardware vem desde 1996 com o artigo do Suyama et al. \cite{suyama1996solvingsatisfiability}. Neste, dada uma instância SAT, é gerado um código VHDL correspondente que é compilado e aplicado à uma FPGA que executa o circuito e resolve a instância. Essa abordagem é denominada \textit{instance-specific}, pois o código HDL gerado é específico aquela instância.
 
 A abordagem proposta por Suyama et al. \cite{suyama1996solvingsatisfiability} pode ser vista na Figura \ref{fig:suyama}. A cada ciclo de \textit{clock}, todas as váriaveis são testadas com todas as claúsulas ao mesmo tempo e então é feito o \textit{backtracking} ou \textit{branching} dependendo da existência ou não de conflitos. O problema é que desta forma o circuito fica imensamente grande e utiliza mal os recursos das FPGAs.
 
